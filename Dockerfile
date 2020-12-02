@@ -1,9 +1,9 @@
 FROM golang
 
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update --fix-missing && apt-get upgrade -y
-RUN apt-get install -y \
-  git
+#ENV DEBIAN_FRONTEND=noninteractive
+#RUN apt-get update --fix-missing && apt-get upgrade -y
+#RUN apt-get install -y \
+#  git
 #  yasm \
 #  python \
 #  gcc \
