@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
 import (
 	"math/big"
@@ -23,10 +23,10 @@ import (
 	quad "github.com/fentec-project/gofe/quadratic"
 )
 
-// innerProdEncryption accepts the encryption c of (x, y)
+// InnerProdEncryption accepts the encryption c of (x, y)
 // and vectors u, v. It manipulates the encryption in order
 // to obtain the encryption of (x*u, y*v).
-func innerProdEncryption(c *quad.SGPCipher, u, v data.Vector) *quad.SGPCipher {
+func InnerProdEncryption(c *quad.SGPCipher, u, v data.Vector) *quad.SGPCipher {
 	zeros := make(data.Vector, 2)
 	zeros[0] = big.NewInt(0)
 	zeros[1] = big.NewInt(0)
@@ -59,13 +59,13 @@ func innerProdEncryption(c *quad.SGPCipher, u, v data.Vector) *quad.SGPCipher {
 // projectEncryption accepts the encryption c of (x, y)
 // and projection matrix P. It manipulates the encryption
 // in order to obtain an encryption of (P*x, P*y).
-func projectEncryption(c *quad.SGPCipher, P data.Matrix) *quad.SGPCipher {
+func ProjectEncryption(c *quad.SGPCipher, P data.Matrix) *quad.SGPCipher {
 	n := len(P) // number of vectors in the P matrix
 	aMulG1 := make([]data.VectorG1, n)
 	bMulG2 := make([]data.VectorG2, n)
 
 	for i := 0; i < n; i++ {
-		innerC := innerProdEncryption(c, P[i], P[i])
+		innerC := InnerProdEncryption(c, P[i], P[i])
 		aMulG1[i] = innerC.AMulG1[0]
 		bMulG2[i] = innerC.BMulG2[0]
 	}
@@ -78,7 +78,7 @@ func projectEncryption(c *quad.SGPCipher, P data.Matrix) *quad.SGPCipher {
 // It manipulates the provided master secret key in order to obtain
 // a secret key for encryption of (x*u, y*v).
 // Secret key is manipulated with the inner (dot) product operation.
-func innerProdSecKey(msk *quad.SGPSecKey, u, v data.Vector) *quad.SGPSecKey {
+func InnerProdSecKey(msk *quad.SGPSecKey, u, v data.Vector) *quad.SGPSecKey {
 	s := make(data.Vector, 1)
 	s[0], _ = msk.S.Dot(u)
 
@@ -92,13 +92,13 @@ func innerProdSecKey(msk *quad.SGPSecKey, u, v data.Vector) *quad.SGPSecKey {
 // encryption of (x, y), and the projection matrix P.
 // It manipulates the provided master secret key in order to obtain
 // a secret key for encryption of (P*x, P*y).
-func projectSecKey(msk *quad.SGPSecKey, P data.Matrix) *quad.SGPSecKey {
+func ProjectSecKey(msk *quad.SGPSecKey, P data.Matrix) *quad.SGPSecKey {
 	n := len(P) // number of vectors in the P matrix
 	s := make(data.Vector, n)
 	t := make(data.Vector, n)
 
 	for i := 0; i < n; i++ {
-		secKeyInner := innerProdSecKey(msk, P[i], P[i])
+		secKeyInner := InnerProdSecKey(msk, P[i], P[i])
 		s[i] = secKeyInner.S[0]
 		t[i] = secKeyInner.T[0]
 	}
@@ -108,7 +108,7 @@ func projectSecKey(msk *quad.SGPSecKey, P data.Matrix) *quad.SGPSecKey {
 
 // diagMat takes a vector v and returns a diagonal matrix
 // with elements of v on the diagonal.
-func diagMat(v data.Vector) data.Matrix {
+func DiagMat(v data.Vector) data.Matrix {
 	l := len(v)
 	mat := make(data.Matrix, l)
 

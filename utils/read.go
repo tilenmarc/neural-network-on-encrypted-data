@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
 import (
 	"bufio"
@@ -26,9 +26,9 @@ import (
 	"github.com/fentec-project/gofe/data"
 )
 
-// readMatFromFile reads matrix elements from the provided file
+// ReadMatFromFile reads matrix elements from the provided file
 // and gives a matrix
-func readMatFromFile(path string) (data.Matrix, error) {
+func ReadMatFromFile(path string) (data.Matrix, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading matrix from file")

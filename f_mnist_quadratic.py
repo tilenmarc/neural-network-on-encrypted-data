@@ -21,7 +21,7 @@ img_size_flat = img_h * img_w + 1 # 28x28 + 1=785, the total number of pixels pl
 n_classes = 10                 # Number of classes, one class per digit
 disc_data = 10
 disc_value = 1000
-
+hid_dim = 128
 
 def load_data(mode='train'):
     """
@@ -89,25 +89,38 @@ print('y_train:\t{}'.format(y_train.shape))
 print('x_train:\t{}'.format(x_valid.shape))
 print('y_valid:\t{}'.format(y_valid.shape))
 
+
 inputs = tf.keras.Input(shape=(img_size_flat,))
-# x1 = tf.keras.layers.Dropout(0.05)(inputs)
+inputs2 = tf.keras.layers.Dropout(0.1)(inputs)
 
-# x = tf.keras.layers.Dense(100, use_bias=False, kernel_initializer='glorot_normal', activation=tf.nn.relu)(inputs)
-x2 = tf.keras.layers.Dense(100, use_bias=False, kernel_initializer='glorot_normal')(inputs)
+# x = tf.keras.layers.Dense(20, kernel_initializer='glorot_normal', activation=tf.nn.relu)(inputs)
+x = tf.keras.layers.Dense(hid_dim, use_bias=False, kernel_initializer='glorot_normal')(inputs2)
+multiplied = tf.keras.layers.Multiply()([x, x])
+multiplied2 = tf.keras.layers.Dropout(0.1)(multiplied)
 
-# t1 = tf.keras.layers.RepeatVector(20)(x2)
-# t2 = tf.keras.layers.Concatenate()([x2 for _ in range(20)])
-# t3 = tf.keras.layers.Reshape((20, 20))(t2)
-# t4 = tf.transpose(t3, perm=[0, 2, 1])
-
-
-x3 = tf.keras.layers.Multiply()([x2, x2])
-# x4 = tf.keras.layers.Flatten()(x3)
+output = tf.keras.layers.Dense(10, use_bias=False)(multiplied2)
 
 
-# x5 = tf.keras.layers.Dropout(0.05)(x4)
 
-output = tf.keras.layers.Dense(10, kernel_initializer='glorot_normal', use_bias=False)(x3)
+# inputs = tf.keras.Input(shape=(img_size_flat,))
+# # x1 = tf.keras.layers.Dropout(0.05)(inputs)
+#
+# # x = tf.keras.layers.Dense(hid_dim, use_bias=True, kernel_initializer='glorot_normal', activation=tf.nn.relu)(inputs)
+# x2 = tf.keras.layers.Dense(hid_dim, use_bias=False, kernel_initializer='glorot_normal')(inputs)
+#
+# # t1 = tf.keras.layers.RepeatVector(20)(x2)
+# # t2 = tf.keras.layers.Concatenate()([x2 for _ in range(20)])
+# # t3 = tf.keras.layers.Reshape((20, 20))(t2)
+# # t4 = tf.transpose(t3, perm=[0, 2, 1])
+#
+#
+# x3 = tf.keras.layers.Multiply()([x2, x2])
+# # x4 = tf.keras.layers.Flatten()(x3)
+#
+#
+# # x5 = tf.keras.layers.Dropout(0.05)(x4)
+#
+# output = tf.keras.layers.Dense(10, kernel_initializer='glorot_normal', use_bias=False)(x3)
 
 #
 
@@ -136,14 +149,14 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 
 # print(y_train.shape)
+check_point = tf.keras.callbacks.ModelCheckpoint('testdata/f_best_model.h5', monitor='val_loss', save_best_only=True)
+model.fit(x_train, y_train, epochs=20, validation_data=(x_valid, y_valid), callbacks=[check_point])
+model = tf.keras.models.load_model('testdata/f_best_model.h5')
+# test_loss, test_acc = model.evaluate(x_valid,  y_valid, verbose=2)
+#
+# print('\nTest accuracy:', test_acc)
 
-model.fit(x_train, y_train, epochs=20, validation_data=(x_valid, y_valid))
-
-test_loss, test_acc = model.evaluate(x_valid,  y_valid, verbose=2)
-
-print('\nTest accuracy:', test_acc)
-
-weights = [[], [], [], []]
+weights = [[], [], [], [],[],[]]
 i = 0
 for layer in model.layers:
     # print(layer.get_weights())
@@ -151,22 +164,34 @@ for layer in model.layers:
     i+=1
     # print(weights, weights[0].shape)
 
-disc_value2 = disc_value
-Pr_model = weights[1][0]
-Pr = discretize_data(weights[1][0], disc_value2)
+disc_value2 = 1000
+Pr_model = weights[2][0]
+Pr = discretize_data(weights[2][0], disc_value2)
 Pr = Pr * disc_value2
 Pr = Pr.astype(int)
 
-Di_model = weights[3][0]
+Di_model = weights[5][0]
 Di = discretize_data(Di_model, disc_value)
 Di = Di * disc_value
 Di = Di.astype(int)
+# Di = Di + disc_value
 
+disc_value3 = 50
 # print(Pr)
+
+Di3 = discretize_data(Di_model, disc_value3)
+Di3 = Di3 * disc_value3
+Di3 = Di3.astype(int)
 
 bla = []
 correct = 0
 correct2 = 0
+max_bits = 0
+max_bits2 = 0
+correct3 = 0
+
+x_valid = np.floor(x_valid * disc_data + 0.5)
+x_valid = x_valid.astype(int)
 
 for i in range(len(x_valid)):
     # true_val = model(x_valid[i])
@@ -175,8 +200,17 @@ for i in range(len(x_valid)):
     v = np.matmul(x_valid[i], Pr)
     vv = np.multiply(v, v)
     vvv = np.matmul(vv, Di)
-    # print(vvv)
+
+    bits = [np.ceil(np.log2(np.abs(x))) for x in vvv]
+    # print(bits)
+    max_bits = max(max_bits, max(bits))
     index = np.argmax(vvv)
+
+    vvv3 = np.matmul(vv, Di3)
+    index3 = np.argmax(vvv3)
+    bits2 = [np.ceil(np.log2(np.abs(x))) for x in vvv3]
+    # print(bits)
+    max_bits2 = max(max_bits2, max(bits2))
 
     v2 = np.matmul(x_valid[i], Pr_model)
     vv2 = np.multiply(v2, v2)
@@ -186,145 +220,40 @@ for i in range(len(x_valid)):
         correct += 1
     if index2 == y_valid[i]:
         correct2 += 1
-
+    if index3 == y_valid[i]:
+        correct3 += 1
     # if index2 != index3:
     #     print("strange", true_val, vvv2)
     # print(index, index2, index3, y_valid[i])
 
 print("accuracy", float(correct2)/len(x_valid))
 print("after discretization", float(correct)/len(x_valid))
+print("after discretization3", float(correct3)/len(x_valid))
 
-# # print(Pr)
-# correct = 0
-# for i in range(len(x_valid)):
-#     # print(x_valid[i])
-#     v = Pr.transpose() * x_train[i]
-#     v = v.transpose()[0]
-#     index = np.argmax(v)
-#     print(v)
-#     print(index)
-#     # print(y_valid[i])
+print("max_bits", max_bits)
+print("max_bits2", max_bits2)
 
+def matrix_to_txt(Mat, name):
+    w = open(name + '.txt', 'w')
+    for i in range(Mat.shape[0]):
+        row = [str(x) for x in Mat[i, :]]
+        w.write(' '.join(row) + '\n')
+    w.close()
+#
 
+for i in range(10):
+    d = np.diag(Di3[:,i])
+    # d = np.sqrt(d)
+    m = np.matmul(np.matmul(Pr, d), np.transpose(Pr))
+    norm = np.linalg.norm(m, ord=2)
+    bound = norm * disc_data**2 *785
+    print("norm", norm, bound, np.log2(bound))
 
-#
-#
-# # Hyper-parameters
-# epochs = 10             # Total number of training epochs
-# batch_size = 100        # Training batch size
-# display_freq = 100      # Frequency of displaying the training results
-# learning_rate = 0.001   # The optimization initial learning rate
-#
-# h1 = 20       # The first hidden layer is a projection to h1 dimensions
-#
-# # weight and bais wrappers
-# def weight_variable(name, shape):
-#     """
-#     Create a weight variable with appropriate initialization
-#     :param name: weight name
-#     :param shape: weight shape
-#     :return: initialized weight variable
-#     """
-#     initer = tf.truncated_normal_initializer(stddev=0.01)
-#     return tf.get_variable('W_' + name,
-#                            dtype=tf.float32,
-#                            shape=shape,
-#                            initializer=initer)
-#
-#
-#
-# # Create the graph for the linear model
-# # Placeholders for inputs (x) and outputs(y)
-# x = tf.placeholder(tf.float32, shape=[None, img_size_flat], name='X')
-# y = tf.placeholder(tf.float32, shape=[None, n_classes], name='Y')
-#
-#
-# P = weight_variable('projection', shape=[img_size_flat, h1])
-# fc1 = tf.matmul(x, P)
-#
-# x2 = tf.square(fc1)
-#
-# D = weight_variable('output', shape=[h1, n_classes])
-# output_logits = tf.matmul(x2, D)
-#
-# # Network predictions
-# cls_prediction = tf.argmax(output_logits, axis=1, name='predictions')
-#
-# # Define the loss function, optimizer, and accuracy
-# loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=output_logits), name='loss')
-# optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, name='Adam-op').minimize(loss)
-# correct_prediction = tf.equal(tf.argmax(output_logits, 1), tf.argmax(y, 1), name='correct_pred')
-# accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy')
-#
-# # Create the op for initializing all variables
-# init = tf.global_variables_initializer()
-#
-# sess = tf.InteractiveSession()
-# sess.run(init)
-# global_step = 0
-# # Number of training iterations in each epoch
-# num_tr_iter = int(len(y_train) / batch_size)
-# for epoch in range(epochs):
-#     print('Training epoch: {}'.format(epoch + 1))
-#     x_train, y_train = randomize(x_train, y_train)
-#     for iteration in range(num_tr_iter):
-#         global_step += 1
-#         start = iteration * batch_size
-#         end = (iteration + 1) * batch_size
-#         x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
-#
-#         # Run optimization op (backprop)
-#         feed_dict_batch = {x: x_batch, y: y_batch}
-#         sess.run(optimizer, feed_dict=feed_dict_batch)
-#
-#         if iteration % display_freq == 0:
-#             # Calculate and display the batch loss and accuracy
-#             loss_batch, acc_batch = sess.run([loss, accuracy],
-#                                              feed_dict=feed_dict_batch)
-#
-#             print("iter {0:3d}:\t Loss={1:.2f},\tTraining Accuracy={2:.01%}".
-#                   format(iteration, loss_batch, acc_batch))
-#
-#     # Run validation after every epoch
-#     feed_dict_valid = {x: x_valid[:5000], y: y_valid[:5000]}
-#     Pr, Di, loss_valid, acc_valid = sess.run([P, D, loss, accuracy], feed_dict=feed_dict_valid)
-#     print('---------------------------------------------------------')
-#     print("Epoch: {0}, validation loss: {1:.2f}, validation accuracy: {2:.01%}".
-#           format(epoch + 1, loss_valid, acc_valid))
-#     print('---------------------------------------------------------')
-# # print(Di)
-#
-#
-# Pr = discretize_data(Pr, disc_value)
-# Di = discretize_data(Di, disc_value)
-# predict = np.matmul(np.square(np.matmul(x_valid, Pr)), Di)
-# correct = np.equal(np.argmax(predict, 1), np.argmax(y_valid, 1))
-# final_acc = np.mean(correct)
-# print('-----------------------------------------------------------------')
-# print('-----------------------------------------------------------------')
-# print('-----------------------------------------------------------------')
-# print("The final accuracy of validation set after discretization: {0:.01%}".
-#       format(final_acc))
-# print('-----------------------------------------------------------------')
-# print('-----------------------------------------------------------------')
-# print('-----------------------------------------------------------------')
-#
-#
-# def matrix_to_txt(Mat, name):
-#     w = open(name + '.txt', 'w')
-#     for i in range(Mat.shape[0]):
-#         row = [str(x) for x in Mat[i, :]]
-#         w.write(' '.join(row) + '\n')
-#     w.close()
-#
-#
-# Pr = Pr * disc_value
-# Pr = Pr.astype(int)
-# Di = Di * disc_value
-# Di = Di.astype(int)
-# valid1 = np.floor(x_valid[:1] * disc_data + 0.5)
+valid1 = x_valid[:1000]
 # valid1 = valid1.astype(int)
-#
-# matrix_to_txt(np.transpose(Pr), 'testdata/mat_proj')
-# matrix_to_txt(np.transpose(Di), 'testdata/mat_diag')
-# matrix_to_txt(valid1, 'testdata/mat_valid')
+pr_valid = np.abs(np.matmul(valid1, Pr))
+
+matrix_to_txt(np.transpose(Pr), 'testdata/f_mat_proj')
+matrix_to_txt(np.transpose(Di3), 'testdata/f_mat_diag')
+matrix_to_txt(valid1, 'testdata/f_x')
+matrix_to_txt(pr_valid, 'testdata/f_x_proj')
