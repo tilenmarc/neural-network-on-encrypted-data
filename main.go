@@ -38,7 +38,7 @@ import (
 // testdata folder.
 func main() {
 	q := quad.NewSGP(1, big.NewInt(2))
-	bits := 38
+	bits := 52
 	repeats := 100
 	g1gen := new(bn256.G1).ScalarBaseMult(big.NewInt(1))
 	g2gen := new(bn256.G2).ScalarBaseMult(big.NewInt(1))
