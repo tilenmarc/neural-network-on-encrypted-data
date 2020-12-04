@@ -38,8 +38,8 @@ import (
 // testdata folder.
 func main() {
 	q := quad.NewSGP(1, big.NewInt(2))
-	bits := 52
-	repeats := 100
+	bits := 50
+	repeats := 1000
 	g1gen := new(bn256.G1).ScalarBaseMult(big.NewInt(1))
 	g2gen := new(bn256.G2).ScalarBaseMult(big.NewInt(1))
 	g := bn256.Pair(g1gen, g2gen)

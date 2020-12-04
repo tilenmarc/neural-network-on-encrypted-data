@@ -4,20 +4,6 @@ FROM golang
 #RUN apt-get update --fix-missing && apt-get upgrade -y
 #RUN apt-get install -y \
 #  git
-#  yasm \
-#  python \
-#  gcc \
-#  g++ \
-#  cmake \
-#  make \
-#  curl \
-#  wget \
-#  apt-transport-https \
-#  m4 \
-#  zip \
-#  unzip \
-#  vim \
-#  build-essential
 
 RUN mkdir /go/src/github.com
 RUN mkdir /go/src/github.com/fentec-project/
@@ -30,5 +16,6 @@ RUN go get -u -t ./...
 
 WORKDIR /go/src/github.com/fentec-project/neural-network-on-encrypted-data
 RUN git checkout linear
+CMD go run main.go
 #RUN go get -u -t ./...
 
